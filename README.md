@@ -19,7 +19,7 @@ This repository automates the process of generating and posting trending blog ar
 ## Setup
 1. Clone the repository:
    ```
-   git clone <repository_url>
+   git clone https://github.com/4relial/openai-wp-autopost
    ```
 2. Install dependencies:
    ```
