@@ -1,0 +1,22 @@
+{
+  "name": "autopost",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.8.4",
+    "btoa": "^1.2.1",
+    "dotenv": "^16.5.0",
+    "form-data": "^4.0.2",
+    "node-fetch": "^3.3.2",
+    "node-schedule": "^2.1.1",
+    "openai": "^4.93.0",
+    "uuid": "^11.1.0"
+  }
+}
