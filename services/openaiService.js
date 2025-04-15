@@ -10,12 +10,13 @@ const allowedSlugs = process.env.ALLOWED_SLUGS ? process.env.ALLOWED_SLUGS.split
 
 export async function fetchTrendingArticleFromOpenAI() {
   const now = new Date();
+  const tanggal = now.getDate();
   const bulan = now.toLocaleString("id-ID", { month: "long" });
   const tahun = now.getFullYear();
   const topic = process.env.TOPIC || '';
   let inputQuery = '';
   if (topic) {
-    inputQuery = `ambil artikel terbaru yang sesuai dengan salah satu tren tentang ${topic} pada hari ini.
+    inputQuery = `ambil artikel terbaru yang sesuai dengan salah satu tren tentang ${topic} pada ${tanggal} ${bulan} ${tahun}.
 
 Berikan hasil dalam bentuk array of objects dengan properti berikut:
 [
@@ -28,7 +29,7 @@ Berikan hasil dalam bentuk array of objects dengan properti berikut:
 
 Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json atau karakter apapun lainnya) agar dapat langsung di-parse dengan JSON.parse().`;
   } else {
-    inputQuery = `Berikan 1 berita terbaru random pada bulan ${bulan} ${tahun}.
+    inputQuery = `Berikan 1 berita terbaru random pada ${tanggal} ${bulan} ${tahun}.
 
 Berikan hasil dalam bentuk array of objects dengan properti berikut:
 [
