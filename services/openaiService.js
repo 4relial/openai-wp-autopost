@@ -15,7 +15,7 @@ export async function fetchTrendingArticleFromOpenAI() {
   const topic = process.env.TOPIC || '';
   let inputQuery = '';
   if (topic) {
-    inputQuery = `Berikan 1 berita terbaru yang sesuai dengan salah satu tren tentang ${topic} pada bulan ${bulan} ${tahun}.
+    inputQuery = `ambil artikel terbaru yang sesuai dengan salah satu tren tentang ${topic} pada hari ini.
 
 Berikan hasil dalam bentuk array of objects dengan properti berikut:
 [
