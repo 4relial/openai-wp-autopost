@@ -2,6 +2,8 @@ import axios from 'axios';
 import { generateImage } from './imageService.js';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import fs from 'fs/promises';
+import path from 'path';
 dotenv.config();
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -14,9 +16,24 @@ export async function fetchTrendingArticleFromOpenAI() {
   const bulan = now.toLocaleString("id-ID", { month: "long" });
   const tahun = now.getFullYear();
   const topic = process.env.TOPIC || '';
+
+  // Read existing titles from JSON file
+  const titlesFilePath = path.join(process.cwd(), 'used-titles.json');
+  let existingTitles = [];
+  try {
+    const titlesData = await fs.readFile(titlesFilePath, 'utf8');
+    existingTitles = JSON.parse(titlesData);
+  } catch (error) {
+    // If file doesn't exist, create empty array
+    await fs.writeFile(titlesFilePath, JSON.stringify([]));
+  }
+
   let inputQuery = '';
   if (topic) {
     inputQuery = `ambil artikel terbaru yang sesuai dengan salah satu tren tentang ${topic} pada ${tanggal} ${bulan} ${tahun}.
+
+Berikut adalah judul-judul yang sudah pernah dibuat, JANGAN membuat judul yang sama atau mirip dengan ini:
+${JSON.stringify(existingTitles)}
 
 Berikan hasil dalam bentuk array of objects dengan properti berikut:
 [
@@ -30,6 +47,9 @@ Berikan hasil dalam bentuk array of objects dengan properti berikut:
 Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json atau karakter apapun lainnya) agar dapat langsung di-parse dengan JSON.parse().`;
   } else {
     inputQuery = `Berikan 1 berita terbaru random pada ${tanggal} ${bulan} ${tahun}.
+
+Berikut adalah judul-judul yang sudah pernah dibuat, JANGAN membuat judul yang sama atau mirip dengan ini:
+${JSON.stringify(existingTitles)}
 
 Berikan hasil dalam bentuk array of objects dengan properti berikut:
 [
@@ -50,6 +70,11 @@ Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json at
   });
 
   const parsed = JSON.parse(response.output_text);
+  
+  // Save new title to JSON file
+  existingTitles.push(parsed[0].judul);
+  await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
+
   return parsed[0];
 }
 

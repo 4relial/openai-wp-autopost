@@ -7,8 +7,8 @@ import { getCategoryId, postToWordPress } from './services/wordpressService.js';
 
 const scheduleEnv = process.env.SCHEDULE || '0 13 * * *';
 const scheduleList = scheduleEnv.split(',').map(s => s.trim());
-scheduleList.forEach(scheduleExp => {
-  schedule.scheduleJob(scheduleExp, async () => {
+// scheduleList.forEach(scheduleExp => {
+//   schedule.scheduleJob(scheduleExp, async () => {
     try {
       const { title, content, categorySlug, metaDescription, keywords, imageURL } = await generatePost();
       const categoryId = await getCategoryId(categorySlug);
@@ -27,5 +27,5 @@ scheduleList.forEach(scheduleExp => {
     } catch (err) {
       console.error('🚨 Unexpected Error:', err.message);
     }
-  });
-});
+//   });
+// });
