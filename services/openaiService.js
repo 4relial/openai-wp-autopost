@@ -16,7 +16,7 @@ export async function fetchTrendingArticleFromOpenAI() {
   const bulan = now.toLocaleString("id-ID", { month: "long" });
   const tahun = now.getFullYear();
   const topic = process.env.TOPIC || '';
-
+  
   // Read existing titles from JSON file
   const titlesFilePath = path.join(process.cwd(), 'used-titles.json');
   let existingTitles = [];
@@ -141,6 +141,19 @@ Format hasil dalam JSON dengan struktur berikut:
   if (process.env.FLUX_API_KEY) {
     imageURL = await generateImage(args.image_prompt);
   }
+  // Read existing titles from JSON file
+  const titlesFilePath = path.join(process.cwd(), 'used-titles.json');
+  let existingTitles = [];
+  try {
+    const titlesData = await fs.readFile(titlesFilePath, 'utf8');
+    existingTitles = JSON.parse(titlesData);
+  } catch (error) {
+    // If file doesn't exist, create empty array
+    await fs.writeFile(titlesFilePath, JSON.stringify([]));
+  }
+
+  existingTitles.push(args.title);
+  await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
 
   return {
     title: args.title,
