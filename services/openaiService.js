@@ -30,37 +30,11 @@ export async function fetchTrendingArticleFromOpenAI() {
 
   let inputQuery = '';
   if (topic) {
-    inputQuery = `ambil artikel terbaru yang sesuai dengan salah satu tren tentang ${topic} pada ${tanggal} ${bulan} ${tahun}.
-
-Berikut adalah judul-judul yang sudah pernah dibuat, JANGAN membuat judul yang sama atau mirip dengan ini:
-${JSON.stringify(existingTitles)}
-
-Berikan hasil dalam bentuk array of objects dengan properti berikut:
-[
-  {
-    judul: string,
-    artikel: string (minimal 500 kalimat),
-    source: string (tautan asli sumber berita)
-  }
-]
-
-Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json atau karakter apapun lainnya) agar dapat langsung di-parse dengan JSON.parse().`;
+    inputQuery = `ambil artikel terbaru dalam 500 kata yang sesuai dengan salah satu tren tentang ${topic} pada ${tanggal} ${bulan} ${tahun}, selain berita yang ada di dalam list berikut:
+${JSON.stringify(existingTitles)}`;
   } else {
-    inputQuery = `Berikan 1 berita terbaru random pada ${tanggal} ${bulan} ${tahun}.
-
-Berikut adalah judul-judul yang sudah pernah dibuat, JANGAN membuat judul yang sama atau mirip dengan ini:
-${JSON.stringify(existingTitles)}
-
-Berikan hasil dalam bentuk array of objects dengan properti berikut:
-[
-  {
-    judul: string,
-    artikel: string (minimal 500 kalimat),
-    source: string (tautan asli sumber berita)
-  }
-]
-
-Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json atau karakter apapun lainnya) agar dapat langsung di-parse dengan JSON.parse().`;
+    inputQuery = `Berikan 1 berita terbaru random dalam 500 kata pada ${tanggal} ${bulan} ${tahun}, selain berita yang ada di dalam list berikut:
+${JSON.stringify(existingTitles)}`;
   }
 
   const response = await client.responses.create({
@@ -69,17 +43,13 @@ Pastikan jawaban hanya JSON valid (tanpa karakter tambahan seperti \`\`\`json at
     input: inputQuery
   });
 
-  const parsed = JSON.parse(response.output_text);
-  
-  // Save new title to JSON file
-  existingTitles.push(parsed[0].judul);
-  await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
+  const result = response.output_text
 
-  return parsed[0];
+  return result;
 }
 
 export async function generatePost() {
-  const { judul, artikel, source } = await fetchTrendingArticleFromOpenAI();
+  const post = await fetchTrendingArticleFromOpenAI();
   const language = process.env.POST_LANGUAGE || 'id';
   let postPrompt = '';
   if (language === 'en') {
@@ -87,12 +57,11 @@ export async function generatePost() {
 
 Ensure:
 - The context is maintained (if discussing a specific game/anime/technology, mention and provide details).
-- Include the original reference link in the content (outbound link): ${source}
-- Optimize for SEO using the title: "${judul}"
+- Optimize for SEO using the title by the article.
 - Use a focus keyword based on the content.
 
 Article:
-${artikel}
+${post}
 
 Format the output in JSON with the following structure:
 - title
@@ -109,12 +78,11 @@ Format the output in JSON with the following structure:
 Pastikan:
 - Fokus tidak keluar konteks (jika membahas game/anime/teknologi tertentu, sebutkan dan jelaskan secara lengkap).
 - Tetap menyebutkan topik utama seperti nama game/anime/AI yang dimaksud.
-- Tambahkan **tautan referensi asli** berikut di akhir atau dalam isi artikel (outbound link): ${source}
-- Optimalkan untuk SEO menggunakan **judul**: "${judul}"
+- Optimalkan untuk SEO menggunakan artikel yang diberikan.
 - Gunakan kata kunci fokus berdasarkan isi.
 
 Artikel:
-${artikel}
+${post}
 
 Format hasil dalam JSON dengan struktur berikut:
 - title
