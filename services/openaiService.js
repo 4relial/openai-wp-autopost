@@ -11,40 +11,51 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const allowedSlugs = process.env.ALLOWED_SLUGS ? process.env.ALLOWED_SLUGS.split(',').map(s => s.trim()) : ['ai', 'tech', 'animanga', 'game'];
 
 export async function fetchTrendingArticleFromOpenAI() {
-if (process.env.TYPE === 'newsapi' && process.env.NEWS_APIKEY) {
-  // Read existing titles from JSON file
-  const titlesFilePath = path.join(process.cwd(), 'used-titles-newsapi.json');
-  let existingTitles = [];
-  try {
-    const titlesData = await fs.readFile(titlesFilePath, 'utf8');
-    existingTitles = JSON.parse(titlesData);
-  } catch (error) {
-    // If file doesn't exist, create empty array
-    await fs.writeFile(titlesFilePath, JSON.stringify([]));
-  }
-
-  const response = await axios.get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWS_APIKEY}`);
-  if (response.data.status === 'ok' && response.data.articles.length > 0) {
-    // Filter out articles that have been used before
-    const unusedArticles = response.data.articles.filter(article => 
-      !existingTitles.includes(article.title)
-    );
-
-    if (unusedArticles.length === 0) {
-      throw new Error('All available articles have been used');
+  if (process.env.TYPE === 'newsapi' && process.env.NEWS_APIKEY) {
+    // Read existing titles from JSON file
+    const titlesFilePath = path.join(process.cwd(), 'used-titles-newsapi.json');
+    let existingTitles = [];
+    try {
+      const titlesData = await fs.readFile(titlesFilePath, 'utf8');
+      existingTitles = JSON.parse(titlesData);
+    } catch (error) {
+      // If file doesn't exist, create empty array
+      await fs.writeFile(titlesFilePath, JSON.stringify([]));
     }
 
-    // Get random article from unused articles
-    const randomIndex = Math.floor(Math.random() * unusedArticles.length);
-    const article = unusedArticles[randomIndex];
+    const response = await axios.get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWS_APIKEY}`);
+    if (response.data.status === 'ok' && response.data.articles.length > 0) {
+      // Filter out articles that have been used before
+      const unusedArticles = response.data.articles.filter(article =>
+        !existingTitles.includes(article.title)
+      );
 
-    // Save the used title
-    existingTitles.push(article.title);
-    await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
+      if (unusedArticles.length === 0) {
+        throw new Error('All available articles have been used');
+      }
 
-    return article.content || article.description;
+      // Get random article from unused articles
+      const randomIndex = Math.floor(Math.random() * unusedArticles.length);
+      const article = unusedArticles[randomIndex];
+
+      // Save the used title
+      existingTitles.push(article.title);
+      await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
+
+      // Send article data to GPT for processing
+      const response2 = await client.responses.create({
+        model: "gpt-4o-mini",
+        tools: [{ type: "web_search_preview" }],
+        input: "get the latest article in 1000 words according to this data " + JSON.stringify({
+          url: article.url,
+          title: article.title,
+          content: article.content || article.description
+        })
+      });
+
+      return response2.output_text;
+    }
   }
-}
 
   const now = new Date();
   const tanggal = now.getDate();
@@ -78,9 +89,7 @@ ${JSON.stringify(existingTitles)}`;
     input: inputQuery
   });
 
-  const result = response.output_text
-
-  return result;
+  return response.output_text;
 }
 
 export async function generatePost() {
