@@ -11,12 +11,47 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const allowedSlugs = process.env.ALLOWED_SLUGS ? process.env.ALLOWED_SLUGS.split(',').map(s => s.trim()) : ['ai', 'tech', 'animanga', 'game'];
 
 export async function fetchTrendingArticleFromOpenAI() {
+if (process.env.TYPE === 'newsapi' && process.env.NEWS_APIKEY) {
+  // Read existing titles from JSON file
+  const titlesFilePath = path.join(process.cwd(), 'used-titles-newsapi.json');
+  let existingTitles = [];
+  try {
+    const titlesData = await fs.readFile(titlesFilePath, 'utf8');
+    existingTitles = JSON.parse(titlesData);
+  } catch (error) {
+    // If file doesn't exist, create empty array
+    await fs.writeFile(titlesFilePath, JSON.stringify([]));
+  }
+
+  const response = await axios.get(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${process.env.NEWS_APIKEY}`);
+  if (response.data.status === 'ok' && response.data.articles.length > 0) {
+    // Filter out articles that have been used before
+    const unusedArticles = response.data.articles.filter(article => 
+      !existingTitles.includes(article.title)
+    );
+
+    if (unusedArticles.length === 0) {
+      throw new Error('All available articles have been used');
+    }
+
+    // Get random article from unused articles
+    const randomIndex = Math.floor(Math.random() * unusedArticles.length);
+    const article = unusedArticles[randomIndex];
+
+    // Save the used title
+    existingTitles.push(article.title);
+    await fs.writeFile(titlesFilePath, JSON.stringify(existingTitles, null, 2));
+
+    return article.content || article.description;
+  }
+}
+
   const now = new Date();
   const tanggal = now.getDate();
   const bulan = now.toLocaleString("id-ID", { month: "long" });
   const tahun = now.getFullYear();
   const topic = process.env.TOPIC || '';
-  
+
   // Read existing titles from JSON file
   const titlesFilePath = path.join(process.cwd(), 'used-titles.json');
   let existingTitles = [];
